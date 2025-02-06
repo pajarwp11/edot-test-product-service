@@ -36,6 +36,13 @@ func (p *ProductRepository) GetList(request *product.GetListRequest) (*[]product
 		params["shop_id"] = request.ShopId
 	}
 
+	limit := request.PerPage
+	offset := limit * (request.Page - 1)
+
+	query += " LIMTT = :limit OFFSET = :offset"
+	params["limit"] = limit
+	params["offset"] = offset
+
 	stmt, err := p.mysql.PrepareNamed(query)
 	if err != nil {
 		return nil, err
