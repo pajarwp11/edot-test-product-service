@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"product-service/db/mysql"
 
 	"github.com/gorilla/mux"
 )
 
 func main() {
+	mysql.Connect()
 	router := mux.NewRouter()
 
 	fmt.Println("server is running")
