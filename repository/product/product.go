@@ -16,7 +16,7 @@ func NewProductRepository(mysql *sqlx.DB) *ProductRepository {
 	}
 }
 
-func (p *ProductRepository) Insert(product *product.Product) error {
+func (p *ProductRepository) Insert(product *product.RegisterRequest) error {
 	_, err := p.mysql.Exec("INSERT INTO products (name,category,price,shop_id) VALUES (?,?,?,?)", product.Name, product.Category, product.Price, product.ShopId)
 	return err
 }

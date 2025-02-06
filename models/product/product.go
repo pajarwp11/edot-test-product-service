@@ -14,3 +14,10 @@ type GetListRequest struct {
 	Page     int
 	PerPage  int
 }
+
+type RegisterRequest struct {
+	Name     string `json:"name"`
+	Category string `json:"category"`
+	Price    int    `json:"price"`
+	ShopId   int    `json:"shop_id"`
+}
