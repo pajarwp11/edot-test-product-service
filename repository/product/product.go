@@ -21,7 +21,7 @@ func (p *ProductRepository) Insert(product *product.RegisterRequest) error {
 	return err
 }
 
-func (p *ProductRepository) GetList(request *product.GetListRequest) (*[]product.Product, error) {
+func (p *ProductRepository) GetList(request *product.GetListRequest) (*[]product.Product, int, error) {
 	products := []product.Product{}
 	query := "SELECT id, name, category, price, shop_id FROM products WHERE 1=1"
 	params := map[string]interface{}{}
@@ -45,12 +45,19 @@ func (p *ProductRepository) GetList(request *product.GetListRequest) (*[]product
 
 	stmt, err := p.mysql.PrepareNamed(query)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	err = stmt.Select(&products, params)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return &products, err
+	var totalItems int
+	queryCount := "SELECT COUNT(*) FROM products"
+	err = p.mysql.Get(&totalItems, queryCount)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return &products, totalItems, err
 }

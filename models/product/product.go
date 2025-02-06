@@ -16,8 +16,8 @@ type GetListRequest struct {
 }
 
 type RegisterRequest struct {
-	Name     string `json:"name"`
-	Category string `json:"category"`
-	Price    int    `json:"price"`
-	ShopId   int    `json:"shop_id"`
+	Name     string `json:"name" validate:"required"`
+	Category string `json:"category" validate:"required"`
+	Price    int    `json:"price" validate:"required"`
+	ShopId   int    `json:"shop_id" validate:"required"`
 }
