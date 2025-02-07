@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -44,7 +43,7 @@ func JWTMiddleware(next http.Handler) http.Handler {
 }
 
 func validateJWT(tokenString string) (jwt.MapClaims, error) {
-	secretKey := []byte(os.Getenv("JWT_SECRET"))
+	secretKey := []byte("myjwtsecret")
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
