@@ -40,18 +40,28 @@ func (p *ProductRepository) GetList(request *product.GetListRequest) (*[]product
 		params["shop_id"] = request.ShopId
 	}
 
+	queryCount, args, err := sqlx.Named(countQuery, params)
+	if err != nil {
+		return nil, nil, 0, err
+	}
 	var totalItems int
-	err := p.mysql.Get(&totalItems, countQuery, params)
+	queryCount = p.mysql.Rebind(queryCount)
+	err = p.mysql.Get(&totalItems, queryCount, args...)
 	if err != nil {
 		return nil, nil, 0, err
 	}
 
 	params["limit"] = request.PerPage
 	params["offset"] = request.PerPage * (request.Page - 1)
-
 	query += " LIMIT :limit OFFSET :offset"
 
-	rows, err := p.mysql.NamedQuery(query, params)
+	query, args, err = sqlx.Named(query, params)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	query = p.mysql.Rebind(query)
+
+	rows, err := p.mysql.Queryx(query, args...)
 	if err != nil {
 		return nil, nil, 0, err
 	}

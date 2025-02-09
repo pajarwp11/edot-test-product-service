@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"product-service/models/product"
 )
@@ -26,11 +27,15 @@ func (s *StockHttpRepository) GetAvailableStock(productList *[]product.GetAvaila
 
 	jsonData, err := json.Marshal(productList)
 	if err != nil {
+		log.Printf("failed to marshal request: %v\n", err)
 		return nil, err
 	}
 
+	log.Println("request body:", string(jsonData))
+
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
+		log.Printf("error init request: %v\n", err)
 		return nil, err
 	}
 
@@ -39,26 +44,30 @@ func (s *StockHttpRepository) GetAvailableStock(productList *[]product.GetAvaila
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("error request available stock: %v\n", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("failed to read response body: %v\n", err)
+		return nil, err
+	}
+
+	log.Println("response body:", string(body))
+
 	if resp.StatusCode != http.StatusOK {
+		log.Println("failed to get available stock, status code:", resp.StatusCode)
 		return nil, errors.New("failed get available stock")
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
 	var response Response
 	err = json.Unmarshal(body, &response)
 	if err != nil {
+		log.Printf("failed to unmarshal response: %v\n", err)
 		return nil, err
 	}
-	formattedData, ok := response.Data.(map[int]int)
-	if !ok {
-		return nil, errors.New("wrong response format")
-	}
+	formattedData, _ := response.Data.(map[int]int)
 	return formattedData, nil
 }

@@ -19,16 +19,16 @@ type ProductHandler struct {
 }
 
 type Meta struct {
-	Page      int
-	PerPage   int
-	Total     int
-	TotalPage int
+	Page      int `json:"page"`
+	PerPage   int `json:"per_page"`
+	Total     int `json:"total"`
+	TotalPage int `json:"total_page"`
 }
 
 type Response struct {
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
-	Meta    Meta        `json:"meta"`
+	Meta    *Meta       `json:"meta,omitempty"`
 }
 
 var validate = validator.New()
@@ -72,17 +72,19 @@ func (p *ProductHandler) GetList(w http.ResponseWriter, req *http.Request) {
 	request := product.GetListRequest{}
 	response := Response{}
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		response.Message = "invalid request body"
-		json.NewEncoder(w).Encode(response)
-		return
-	}
 
 	request.Category = req.URL.Query().Get("category")
 	request.ShopId, _ = strconv.Atoi(req.URL.Query().Get("shop_id"))
 	request.Page, _ = strconv.Atoi(req.URL.Query().Get("page"))
 	request.PerPage, _ = strconv.Atoi(req.URL.Query().Get("per_page"))
+
+	if request.Page == 0 {
+		request.Page = 1
+	}
+
+	if request.PerPage == 0 {
+		request.PerPage = 10
+	}
 
 	products, total, err := p.productUsecase.GetList(&request)
 	if err != nil {
@@ -96,10 +98,10 @@ func (p *ProductHandler) GetList(w http.ResponseWriter, req *http.Request) {
 	response.Data = map[string]interface{}{
 		"products": products,
 	}
-	response.Meta = Meta{
+	response.Meta = &Meta{
 		Page:      request.Page,
 		PerPage:   request.PerPage,
-		Total:     0,
+		Total:     total,
 		TotalPage: ((total + request.PerPage - 1) / request.PerPage),
 	}
 	json.NewEncoder(w).Encode(response)

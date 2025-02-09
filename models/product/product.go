@@ -1,12 +1,12 @@
 package product
 
 type Product struct {
-	Id       int    `db:"id"`
-	Name     string `db:"name"`
-	Category string `db:"category"`
-	Price    int    `db:"price"`
-	ShopId   int    `db:"shop_id"`
-	Stock    int
+	Id       int    `db:"id" json:"id"`
+	Name     string `db:"name" json:"name"`
+	Category string `db:"category" json:"category"`
+	Price    int    `db:"price" json:"price"`
+	ShopId   int    `db:"shop_id" json:"shop_id"`
+	Stock    int    `json:"stock"`
 }
 
 type GetListRequest struct {

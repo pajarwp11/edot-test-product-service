@@ -23,7 +23,7 @@ func main() {
 	productUsecase := productUsecase.NewProductUsecase(productRepository, stockHttpRepo)
 	productHandler := productHandler.NewProductHandler(productUsecase)
 	router.Handle("/product/register", middleware.JWTMiddleware(http.HandlerFunc(productHandler.Register))).Methods(http.MethodPost)
-	router.Handle("/product", middleware.JWTMiddleware(http.HandlerFunc(productHandler.Register))).Methods(http.MethodGet)
+	router.Handle("/product", middleware.JWTMiddleware(http.HandlerFunc(productHandler.GetList))).Methods(http.MethodGet)
 
 	fmt.Println("server is running")
 	err := http.ListenAndServe(":8001", router)

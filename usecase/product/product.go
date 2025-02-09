@@ -26,6 +26,7 @@ func NewProductUsecase(productRepo ProductRepository, stockHttpRepository StockH
 }
 
 func (p *ProductUsecase) Register(productRegister *product.RegisterRequest) error {
+	// TO DO: check if shop id belong to user
 	return p.productRepo.Insert(productRegister)
 }
 
@@ -34,13 +35,15 @@ func (p *ProductUsecase) GetList(request *product.GetListRequest) (*[]product.Pr
 	if err != nil {
 		return nil, 0, err
 	}
-	productStockMap, err := p.stockHttpRepository.GetAvailableStock(productShopList)
-	if err != nil {
-		return nil, 0, err
-	}
+	if len(*products) > 0 {
+		productStockMap, err := p.stockHttpRepository.GetAvailableStock(productShopList)
+		if err != nil {
+			return nil, 0, err
+		}
 
-	for i, product := range *products {
-		(*products)[i].Stock = productStockMap[product.Id]
+		for i, product := range *products {
+			(*products)[i].Stock = productStockMap[product.Id]
+		}
 	}
 
 	return products, total, nil
