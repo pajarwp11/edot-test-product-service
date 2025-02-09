@@ -21,3 +21,8 @@ type RegisterRequest struct {
 	Price    int    `json:"price" validate:"required"`
 	ShopId   int    `json:"shop_id" validate:"required"`
 }
+
+type GetAvailableStock struct {
+	ProductId int `json:"product_id"`
+	ShopId    int `json:"shop_id"`
+}

@@ -6,7 +6,7 @@ import (
 
 type ProductRepository interface {
 	Insert(product *product.RegisterRequest) error
-	GetList(request *product.GetListRequest) (*[]product.Product, int, error)
+	GetList(request *product.GetListRequest) (*[]product.Product, *[]product.GetAvailableStock, int, error)
 }
 
 type ProductUsecase struct {
@@ -24,5 +24,9 @@ func (p *ProductUsecase) Register(productRegister *product.RegisterRequest) erro
 }
 
 func (p *ProductUsecase) GetList(request *product.GetListRequest) (*[]product.Product, int, error) {
-	return p.productRepo.GetList(request)
+	products, _, total, err := p.productRepo.GetList(request)
+	if err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }

@@ -21,8 +21,9 @@ func (p *ProductRepository) Insert(product *product.RegisterRequest) error {
 	return err
 }
 
-func (p *ProductRepository) GetList(request *product.GetListRequest) (*[]product.Product, int, error) {
+func (p *ProductRepository) GetList(request *product.GetListRequest) (*[]product.Product, *[]product.GetAvailableStock, int, error) {
 	products := []product.Product{}
+	getAvailableStock := []product.GetAvailableStock{}
 	query := "SELECT id, name, category, price, shop_id FROM products WHERE 1=1"
 	countQuery := "SELECT COUNT(*) FROM products WHERE 1=1"
 	params := map[string]interface{}{}
@@ -42,7 +43,7 @@ func (p *ProductRepository) GetList(request *product.GetListRequest) (*[]product
 	var totalItems int
 	err := p.mysql.Get(&totalItems, countQuery, params)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
 
 	params["limit"] = request.PerPage
@@ -52,17 +53,23 @@ func (p *ProductRepository) GetList(request *product.GetListRequest) (*[]product
 
 	rows, err := p.mysql.NamedQuery(query, params)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var prod product.Product
 		if err := rows.StructScan(&prod); err != nil {
-			return nil, 0, err
+			return nil, nil, 0, err
 		}
 		products = append(products, prod)
+
+		stock := product.GetAvailableStock{
+			ProductId: prod.Id,
+			ShopId:    prod.ShopId,
+		}
+		getAvailableStock = append(getAvailableStock, stock)
 	}
 
-	return &products, totalItems, nil
+	return &products, &getAvailableStock, totalItems, nil
 }
