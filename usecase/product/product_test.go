@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// Mock for ProductRepository
+// Mock ProductRepository
 type MockProductRepository struct {
 	mock.Mock
 }
@@ -24,62 +24,110 @@ func (m *MockProductRepository) GetList(request *product.GetListRequest) (*[]pro
 	return args.Get(0).(*[]product.Product), args.Get(1).(*[]product.GetAvailableStock), args.Int(2), args.Error(3)
 }
 
-// Test case for GetList
-func TestGetList(t *testing.T) {
-	mockRepo := new(MockProductRepository)
-	usecase := NewProductUsecase(mockRepo)
+// Mock StockHttpRepository
+type MockStockHttpRepository struct {
+	mock.Mock
+}
 
-	mockProducts := []product.Product{
-		{Id: 1, Name: "Product A", Category: "Category 1", Price: 100, ShopId: 1},
-		{Id: 2, Name: "Product B", Category: "Category 2", Price: 200, ShopId: 2},
-	}
-	mockStock := []product.GetAvailableStock{
-		{ProductId: 1, ShopId: 10},
-		{ProductId: 2, ShopId: 20},
-	}
-	total := 2
+func (m *MockStockHttpRepository) GetAvailableStock(productList *[]product.GetAvailableStock) (map[int]int, error) {
+	args := m.Called(productList)
+	return args.Get(0).(map[int]int), args.Error(1)
+}
 
-	request := &product.GetListRequest{
-		Category: "Category 1",
+func TestGetList_Success(t *testing.T) {
+	mockProductRepo := new(MockProductRepository)
+	mockStockRepo := new(MockStockHttpRepository)
+	usecase := NewProductUsecase(mockProductRepo, mockStockRepo)
+
+	// Mock request
+	req := &product.GetListRequest{
+		Category: "Electronics",
 		ShopId:   1,
-		Page:     1,
 		PerPage:  10,
+		Page:     1,
 	}
 
-	// Define expected return values
-	mockRepo.On("GetList", request).Return(&mockProducts, &mockStock, total, nil)
+	// Mock products data
+	mockProducts := &[]product.Product{
+		{Id: 1, Name: "Laptop", Category: "Electronics", Price: 1000, ShopId: 1},
+		{Id: 2, Name: "Mouse", Category: "Electronics", Price: 50, ShopId: 1},
+	}
 
-	// Call the usecase method
-	products, totalItems, err := usecase.GetList(request)
+	// Mock ProductShopList
+	mockProductShopList := &[]product.GetAvailableStock{
+		{ProductId: 1, ShopId: 1},
+		{ProductId: 2, ShopId: 1},
+	}
+
+	// Mock Stock Data
+	mockStock := map[int]int{
+		1: 5,  // 5 units in stock for ProductId 1
+		2: 10, // 10 units in stock for ProductId 2
+	}
+
+	// Mock GetList
+	mockProductRepo.On("GetList", req).Return(mockProducts, mockProductShopList, 2, nil)
+	mockStockRepo.On("GetAvailableStock", mockProductShopList).Return(mockStock, nil)
+
+	// Run Usecase
+	products, total, err := usecase.GetList(req)
 
 	// Assertions
 	assert.NoError(t, err)
-	assert.Equal(t, total, totalItems)
-	assert.Equal(t, mockProducts, *products)
+	assert.Equal(t, 2, total)
+	assert.Len(t, *products, 2)
+	assert.Equal(t, 5, (*products)[0].Stock)
+	assert.Equal(t, 10, (*products)[1].Stock)
 
-	// Ensure that the mock expectations were met
-	mockRepo.AssertExpectations(t)
+	// Verify mocks
+	mockProductRepo.AssertExpectations(t)
+	mockStockRepo.AssertExpectations(t)
 }
 
-// Test case when repository returns an error
-func TestGetList_Error(t *testing.T) {
-	mockRepo := new(MockProductRepository)
-	usecase := NewProductUsecase(mockRepo)
+func TestGetList_ProductRepoError(t *testing.T) {
+	mockProductRepo := new(MockProductRepository)
+	mockStockRepo := new(MockStockHttpRepository)
+	usecase := NewProductUsecase(mockProductRepo, mockStockRepo)
 
-	request := &product.GetListRequest{
-		Category: "Invalid Category",
-		ShopId:   1,
-		Page:     1,
-		PerPage:  10,
-	}
+	req := &product.GetListRequest{Category: "Electronics", ShopId: 1, PerPage: 10, Page: 1}
 
-	mockRepo.On("GetList", request).Return(&[]product.Product{}, &[]product.GetAvailableStock{}, 0, errors.New("database error"))
+	// Mock GetList error
+	mockProductRepo.On("GetList", req).Return((*[]product.Product)(nil), (*[]product.GetAvailableStock)(nil), 0, errors.New("database error"))
 
-	products, totalItems, err := usecase.GetList(request)
+	products, total, err := usecase.GetList(req)
 
 	assert.Error(t, err)
-	assert.Equal(t, 0, totalItems)
 	assert.Nil(t, products)
+	assert.Equal(t, 0, total)
 
-	mockRepo.AssertExpectations(t)
+	mockProductRepo.AssertExpectations(t)
+}
+
+func TestGetList_StockRepoError(t *testing.T) {
+	mockProductRepo := new(MockProductRepository)
+	mockStockRepo := new(MockStockHttpRepository)
+	usecase := NewProductUsecase(mockProductRepo, mockStockRepo)
+
+	req := &product.GetListRequest{Category: "Electronics", ShopId: 1, PerPage: 10, Page: 1}
+
+	productsMock := []product.Product{
+		{Id: 1, Name: "Laptop", Category: "Electronics", Price: 1000, ShopId: 1},
+	}
+	productShopListMock := []product.GetAvailableStock{
+		{ProductId: 1, ShopId: 1},
+	}
+
+	mockProductRepo.On("GetList", req).Return(&productsMock, &productShopListMock, len(productsMock), nil)
+
+	// Mock stock service error
+	mockStockRepo.On("GetAvailableStock", &productShopListMock).Return(map[int]int(nil), errors.New("stock service error"))
+
+	products, total, err := usecase.GetList(req)
+
+	assert.Error(t, err)
+	assert.Nil(t, products)
+	assert.Equal(t, 0, total)
+
+	mockProductRepo.AssertExpectations(t)
+	mockStockRepo.AssertExpectations(t)
 }

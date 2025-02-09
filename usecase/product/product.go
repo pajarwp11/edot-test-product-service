@@ -9,13 +9,19 @@ type ProductRepository interface {
 	GetList(request *product.GetListRequest) (*[]product.Product, *[]product.GetAvailableStock, int, error)
 }
 
-type ProductUsecase struct {
-	productRepo ProductRepository
+type StockHttpRepository interface {
+	GetAvailableStock(productList *[]product.GetAvailableStock) (map[int]int, error)
 }
 
-func NewProductUsecase(productRepo ProductRepository) *ProductUsecase {
+type ProductUsecase struct {
+	productRepo         ProductRepository
+	stockHttpRepository StockHttpRepository
+}
+
+func NewProductUsecase(productRepo ProductRepository, stockHttpRepository StockHttpRepository) *ProductUsecase {
 	return &ProductUsecase{
-		productRepo: productRepo,
+		productRepo:         productRepo,
+		stockHttpRepository: stockHttpRepository,
 	}
 }
 
@@ -24,9 +30,18 @@ func (p *ProductUsecase) Register(productRegister *product.RegisterRequest) erro
 }
 
 func (p *ProductUsecase) GetList(request *product.GetListRequest) (*[]product.Product, int, error) {
-	products, _, total, err := p.productRepo.GetList(request)
+	products, productShopList, total, err := p.productRepo.GetList(request)
 	if err != nil {
 		return nil, 0, err
 	}
+	productStockMap, err := p.stockHttpRepository.GetAvailableStock(productShopList)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	for i, product := range *products {
+		(*products)[i].Stock = productStockMap[product.Id]
+	}
+
 	return products, total, nil
 }

@@ -6,6 +6,7 @@ type Product struct {
 	Category string `db:"category"`
 	Price    int    `db:"price"`
 	ShopId   int    `db:"shop_id"`
+	Stock    int
 }
 
 type GetListRequest struct {
