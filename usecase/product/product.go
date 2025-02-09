@@ -2,6 +2,7 @@ package product
 
 import (
 	"product-service/models/product"
+	"strconv"
 )
 
 type ProductRepository interface {
@@ -10,7 +11,7 @@ type ProductRepository interface {
 }
 
 type StockHttpRepository interface {
-	GetAvailableStock(productList *[]product.GetAvailableStock) (map[int]int, error)
+	GetAvailableStock(productList *[]product.GetAvailableStock) (map[string]interface{}, error)
 }
 
 type ProductUsecase struct {
@@ -42,7 +43,12 @@ func (p *ProductUsecase) GetList(request *product.GetListRequest) (*[]product.Pr
 		}
 
 		for i, product := range *products {
-			(*products)[i].Stock = productStockMap[product.Id]
+			productId := strconv.Itoa(product.Id)
+			stock := productStockMap[productId]
+			if stock != nil {
+				stockProduct := stock.(float64)
+				(*products)[i].Stock = int(stockProduct)
+			}
 		}
 	}
 

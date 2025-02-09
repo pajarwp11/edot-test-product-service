@@ -29,9 +29,9 @@ type MockStockHttpRepository struct {
 	mock.Mock
 }
 
-func (m *MockStockHttpRepository) GetAvailableStock(productList *[]product.GetAvailableStock) (map[int]int, error) {
+func (m *MockStockHttpRepository) GetAvailableStock(productList *[]product.GetAvailableStock) (map[string]interface{}, error) {
 	args := m.Called(productList)
-	return args.Get(0).(map[int]int), args.Error(1)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
 }
 
 func TestGetList_Success(t *testing.T) {
@@ -60,9 +60,9 @@ func TestGetList_Success(t *testing.T) {
 	}
 
 	// Mock Stock Data
-	mockStock := map[int]int{
-		1: 5,  // 5 units in stock for ProductId 1
-		2: 10, // 10 units in stock for ProductId 2
+	mockStock := map[string]interface{}{
+		"1": float64(5),  // 5 units in stock for ProductId 1
+		"2": float64(10), // 10 units in stock for ProductId 2
 	}
 
 	// Mock GetList
@@ -120,7 +120,7 @@ func TestGetList_StockRepoError(t *testing.T) {
 	mockProductRepo.On("GetList", req).Return(&productsMock, &productShopListMock, len(productsMock), nil)
 
 	// Mock stock service error
-	mockStockRepo.On("GetAvailableStock", &productShopListMock).Return(map[int]int(nil), errors.New("stock service error"))
+	mockStockRepo.On("GetAvailableStock", &productShopListMock).Return(map[string]interface{}(nil), errors.New("stock service error"))
 
 	products, total, err := usecase.GetList(req)
 

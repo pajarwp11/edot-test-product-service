@@ -22,7 +22,7 @@ type Response struct {
 	Data    interface{} `json:"data"`
 }
 
-func (s *StockHttpRepository) GetAvailableStock(productList *[]product.GetAvailableStock) (map[int]int, error) {
+func (s *StockHttpRepository) GetAvailableStock(productList *[]product.GetAvailableStock) (map[string]interface{}, error) {
 	url := "http://localhost:8003/product-warehouse/available-stock"
 
 	jsonData, err := json.Marshal(productList)
@@ -68,6 +68,6 @@ func (s *StockHttpRepository) GetAvailableStock(productList *[]product.GetAvaila
 		log.Printf("failed to unmarshal response: %v\n", err)
 		return nil, err
 	}
-	formattedData, _ := response.Data.(map[int]int)
+	formattedData, _ := response.Data.(map[string]interface{})
 	return formattedData, nil
 }
