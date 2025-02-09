@@ -24,40 +24,45 @@ func (p *ProductRepository) Insert(product *product.RegisterRequest) error {
 func (p *ProductRepository) GetList(request *product.GetListRequest) (*[]product.Product, int, error) {
 	products := []product.Product{}
 	query := "SELECT id, name, category, price, shop_id FROM products WHERE 1=1"
+	countQuery := "SELECT COUNT(*) FROM products WHERE 1=1"
 	params := map[string]interface{}{}
 
 	if request.Category != "" {
 		query += " AND category = :category"
+		countQuery += " AND category = :category"
 		params["category"] = request.Category
 	}
 
 	if request.ShopId != 0 {
 		query += " AND shop_id = :shop_id"
+		countQuery += " AND shop_id = :shop_id"
 		params["shop_id"] = request.ShopId
 	}
 
-	limit := request.PerPage
-	offset := limit * (request.Page - 1)
-
-	query += " LIMTT = :limit OFFSET = :offset"
-	params["limit"] = limit
-	params["offset"] = offset
-
-	stmt, err := p.mysql.PrepareNamed(query)
-	if err != nil {
-		return nil, 0, err
-	}
-	err = stmt.Select(&products, params)
-	if err != nil {
-		return nil, 0, err
-	}
-
 	var totalItems int
-	queryCount := "SELECT COUNT(*) FROM products"
-	err = p.mysql.Get(&totalItems, queryCount)
+	err := p.mysql.Get(&totalItems, countQuery, params)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return &products, totalItems, err
+	params["limit"] = request.PerPage
+	params["offset"] = request.PerPage * (request.Page - 1)
+
+	query += " LIMIT :limit OFFSET :offset"
+
+	rows, err := p.mysql.NamedQuery(query, params)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var prod product.Product
+		if err := rows.StructScan(&prod); err != nil {
+			return nil, 0, err
+		}
+		products = append(products, prod)
+	}
+
+	return &products, totalItems, nil
 }
